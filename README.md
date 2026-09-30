@@ -1,38 +1,39 @@
-# 个人主页
+# WT 弹药库
 
-全新创建的中文个人主页，使用原生 HTML、CSS、JavaScript，无需构建或安装依赖。
-
-## 本地预览
-
-用浏览器打开 `index.html`，或使用任意静态文件服务器。
-
-## 修改内容
-
-- `index.html`：姓名、介绍、项目卡片与兴趣内容。
-- `style.css`：颜色、字体和响应式布局。
-- `app.js`：项目详情、手机导航与导航高亮。
-
-当前姓名、个人介绍与项目为示例内容，发布后可随时替换。页面不含真实联系方式、表单、跟踪脚本或外部资源。
-
-## 已发布的网站
+基于 War Thunder Wiki 的中文陆战弹药与穿深查询网站，采用 HTML / CSS / JavaScript。
 
 - 正式网址：https://personal-homepage-zxzxghxq.pages.dev/
-- GitHub 仓库：https://github.com/zxzxghxq/personal-homepage
-- Cloudflare Pages 项目：`personal-homepage-zxzxghxq`
-- 生产分支：`main`
+- 代码仓库：https://github.com/zxzxghxq/personal-homepage
+- 数据来源：https://wiki.warthunder.com/ground
 
-当前采用 Cloudflare Pages Direct Upload，GitHub 用于保存源代码；推送 GitHub 不会自动重新部署。修改后，将 `index.html`、`style.css` 和 `app.js` 放进一个单独的公开文件夹，通过 Cloudflare Pages 上传，或使用已授权的 Wrangler 发布该文件夹：
+## 数据范围
+
+2026-10-01 快照，覆盖当日 WT Wiki 陆战目录的全部 1,224 个唯一载具链接，包含 10 个国家、轻型/中型/重型坦克、坦克歼击车和自行防空载具；共 4,424 条火炮炮弹、导弹与自动炮弹带记录。机枪、榴弹发射器不包含在本弹药库中。部分只有机枪或雷达设备的载具没有对应弹药表，页面会明确提示。
+
+这代表目录快照的覆盖范围，不保证包括 Wiki 目录之外的隐藏、测试或未来载具。
+
+## 穿深与来源
+
+每辆车均附原始 Wiki 链接。保留 10、100、500、1000、1500、2000 米的距离与 0°、30°、60° 的入射角。缺失数据使用空值，界面显示“—”，不进行插值或角度推算。
+
+- 优先采用弹药详情中的动能穿深表；详情与简表有差异时给予说明。
+- 破甲射流使用其单独的角度表和恒定距离简表，不混入同弹的动能撞击数据。
+- 高爆破片穿深以独立备注展示，与动能或射流穿深区分。
+- 弹带只使用该组合的距离简表，不把单个组件弹的弹道属性套用到整条弹带。
+- 数据为游戏内参数，更新后可能发生变化。
+
+## 使用
+
+支持车名、弹名、火炮型号搜索；常见中文别名（豹、虎、谢尔曼等）辅助检索；按国家、载具类别和弹药类型筛选。选择载具后可切换距离与角度，并点击弹药查看完整穿深矩阵。
+
+通过任意静态 HTTP 服务器预览。`data/vehicles.json` 为数据快照；`index.html` 为结构，`style.css` 为样式，`app.js` 为交互。无需编译、数据库、追踪脚本或第三方运行时。
+
+## 更新部署
+
+代码保存于 GitHub，Cloudflare Pages 当前为 Direct Upload，GitHub 推送不会自动部署。将 `index.html`、`style.css`、`app.js` 和 `data/` 放入单独的公开文件夹，发布：
 
 ```sh
 wrangler pages deploy <公开文件夹> --project-name personal-homepage-zxzxghxq --branch main
 ```
 
-不要把 `.git`、授权文件或本地工作文件上传为网站资源。
-
-## GitHub 自动部署（另建项目时）
-
-连接 GitHub 仓库后，框架预设选择 None，构建命令留空，输出目录填写 `.`，生产分支为 `main`。使用免费 `pages.dev` 子域名，不需要购买域名。
-
-## GitHub Pages 备选
-
-在仓库 Settings → Pages 中选择 Deploy from a branch，分支 `main`，目录 `/ (root)`。
+仅上传公开网站资源，不上传 `.git`、授权文件或本地采集缓存。
