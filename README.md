@@ -26,11 +26,11 @@
 
 支持车名、弹名、火炮型号搜索；常见中文别名（豹、虎、谢尔曼等）辅助检索；按国家、载具类别和弹药类型筛选。选择载具后可切换距离与角度，并点击弹药查看完整穿深矩阵。
 
-通过任意静态 HTTP 服务器预览。`data/vehicles.json` 为数据快照；`index.html` 为结构，`style.css` 为样式，`app.js` 为交互。无需编译、数据库、追踪脚本或第三方运行时。
+通过任意静态 HTTP 服务器预览。`data/vehicles.json` 为数据快照；`index.html` 为结构，`style.css` 为样式，`app.js` 为交互，`hit-demo.js` 为命中示意。无需编译、数据库、追踪脚本或第三方运行时。
 
 ## 更新部署
 
-代码保存于 GitHub，Cloudflare Pages 当前为 Direct Upload，GitHub 推送不会自动部署。将 `index.html`、`style.css`、`app.js` 、`_headers` 和 `data/` 放入单独的公开文件夹，发布：
+代码保存于 GitHub，Cloudflare Pages 当前为 Direct Upload，GitHub 推送不会自动部署。将 `index.html`、`style.css`、`app.js`、`hit-demo.js`、`_headers` 和 `data/` 放入单独的公开文件夹，发布：
 
 ```sh
 wrangler pages deploy <公开文件夹> --project-name wt-ammo-guide --branch main
@@ -45,4 +45,4 @@ wrangler pages deploy <公开文件夹> --project-name wt-ammo-guide --branch ma
 
 _headers 提供 CSP、HSTS、禁止页面嵌入、禁止 MIME 嗅探、no-referrer，以及禁用摄像头、麦克风、位置等浏览器权限。网站为静态查询工具，无登录表单或外部脚本。证书、HTTPS 和响应头检查通过；这些检查不等同于全面渗透测试或匿名性保证。
 
-命中演示：选中弹药后，输入 1–2000 mm 的均质钢板厚度并点击发射。根据当前 Wiki 距离与角度穿深进行数值对比，动画为二维示意，不是游戏伤害模型。缺失数据时禁用发射。
+命中演示：选中弹药后，输入 1–2000 mm 的均质钢板厚度并点击发射。根据当前 Wiki 距离与角度穿深进行数值对比，动画为二维示意，不是游戏伤害模型。缺失数据时仍可观看机理示意，但不判定击穿。同车弹药可从演示下拉框切换；分别展示穿甲杆、破甲射流、碎甲剥落、榴霰散射和导弹效果。指令制导显示瞄准参考线，防空导弹展示航空目标近炸破片。

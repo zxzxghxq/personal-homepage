@@ -11,6 +11,7 @@ const normalize=text=>String(text).toLowerCase().normalize('NFKC').replace(/[\s\
 const country=v=>countryNames[v.country]||v.country||'未知国家';
 const role=v=>roleNames[v.role]||v.role||'未分类';
 function value(shell,d=distance,a=angle){
+ if(shell.type==='HESH'&&shell.affectedThickness!=null)return a==='0'?shell.affectedThickness:null;
  if(shell.constantAngles && Object.hasOwn(shell.constantAngles,a))return shell.constantAngles[a];
  if(shell.angles[a]){const i=(shell.angleDistances||shell.distances).indexOf(Number(d));return i>=0?shell.angles[a][i]??null:null;}
  if(a==='0'){const i=shell.distances.indexOf(Number(d));return i>=0?shell.table0[i]??null:null;}
@@ -65,24 +66,25 @@ function renderDetails(){
   select.addEventListener('change',()=>{if(id==='distance')distance=Number(select.value);else angle=select.value;renderDetails();$(id).focus();});l.append(select);conditions.append(l);
  }
  conditions.append(node('p','单位：毫米 · 点击弹药名展开详情','condition-note'));root.append(conditions);
- const shells=v.shells.map((s,i)=>({s,i})).filter(({s})=>!$('type').value||s.type.split('/').includes($('type').value));
+ const shells=v.shells.map((s,i)=>({s,i}));
  if(!shells.length){const empty=node('div',null,'empty');empty.append(node('b',v.error?'此载具数据暂缺':'暂无炮弹数据'),node('span','请查看上方 Wiki 页面。机枪与榴弹发射器不在本库范围内。'));root.append(empty);return;}
  if(!shells.some(x=>x.i===shellIndex))shellIndex=shells[0].i;
- const wrap=node('div',null,'table-wrap');const table=node('table');const thead=node('thead');const tr=node('tr');['弹药 / 火炮','弹种','初速','穿深 (mm)'].forEach((t,i)=>tr.append(node('th',t,i===3?'number':null)));thead.append(tr);table.append(thead);const tbody=node('tbody');
+ const wrap=node('div',null,'table-wrap');const table=node('table');const thead=node('thead');const tr=node('tr');['弹药 / 火炮','弹种','初速','穿深 / 作用厚度 (mm)'].forEach((t,i)=>tr.append(node('th',t,i===3?'number':null)));thead.append(tr);table.append(thead);const tbody=node('tbody');
  const max=Math.max(1,...shells.map(({s})=>value(s)||0));
  for(const {s,i} of shells){const row=node('tr',null,'ammo-row'+(i===shellIndex?' active':''));const namecell=node('td');const b=node('button',s.name,'ammo-name'+(i===shellIndex?' selected':''));b.setAttribute('aria-expanded',String(i===shellIndex));b.addEventListener('click',()=>{shellIndex=i;renderDetails();});namecell.append(b,node('span',s.weapon+(s.belt?' · 弹带':''),'weapon'));row.append(namecell);const typ=node('td');typ.append(node('span',s.type,'ammo-type'));row.append(typ,node('td',s.properties['Muzzle Velocity']||'—'));const pen=value(s);const cell=node('td',pen==null?'—':String(pen),'number');if(pen!=null){const bar=node('div',null,'bar');const fill=node('i');fill.style.width=`${pen/max*100}%`;bar.append(fill);cell.append(bar);}row.append(cell);tbody.append(row);}
- table.append(tbody);wrap.append(table);root.append(wrap);renderHitDemo(root,v.shells[shellIndex],value(v.shells[shellIndex]),distance,angle);renderShell(root,v.shells[shellIndex]);
+ table.append(tbody);wrap.append(table);root.append(wrap);renderHitDemo(root,v.shells[shellIndex],value(v.shells[shellIndex]),distance,angle,{shells:v.shells,index:shellIndex,onSelect:i=>{shellIndex=i;renderDetails();}});renderShell(root,v.shells[shellIndex]);
 }
 function renderShell(root,s){
  const block=node('div',null,'ammo-detail');block.append(node('h3',s.name),node('p',`${s.type} · ${s.weapon}`,'detail-meta'));
  const props=node('div',null,'properties');Object.entries(s.properties).filter(([key])=>['Caliber','Projectile Mass','Muzzle Velocity','Explosive Mass','TNT Equivalent','Fuze Delay','Fuze Sensitivity'].includes(key)).forEach(([key,val])=>{const div=node('div',translations[key]||key);div.append(node('strong',val));props.append(div);});block.append(props);
- const wrap=node('div',null,'table-wrap');const table=node('table',null,'matrix');const cap=node('caption',s.constantAngles?'Wiki 破甲射流穿深 · mm':Object.keys(s.angles).length?'Wiki 穿深详情表 · mm':'Wiki 距离穿深表 · mm');cap.style.textAlign='left';cap.style.color='var(--muted)';cap.style.fontSize='12px';cap.style.marginBottom='10px';table.append(cap);const head=node('thead');const hr=node('tr');['距离','0°','30°','60°'].forEach(t=>hr.append(node('th',t)));head.append(hr);table.append(head);const body=node('tbody');
+ const wrap=node('div',null,'table-wrap');const table=node('table',null,'matrix');const cap=node('caption',s.type==='HESH'&&s.affectedThickness!=null?'Wiki 碎甲弹可影响钢板厚度 · mm':s.constantAngles?'Wiki 破甲射流穿深 · mm':Object.keys(s.angles).length?'Wiki 穿深详情表 · mm':'Wiki 距离穿深表 · mm');cap.style.textAlign='left';cap.style.color='var(--muted)';cap.style.fontSize='12px';cap.style.marginBottom='10px';table.append(cap);const head=node('thead');const hr=node('tr');['距离','0°','30°','60°'].forEach(t=>hr.append(node('th',t)));head.append(hr);table.append(head);const body=node('tbody');
  for(const d of dataset.distances){const row=node('tr');row.append(node('td',`${d} m`));for(const a of ['0','30','60']){const n=value(s,d,a);row.append(node('td',n==null?'—':String(n),Number(d)===distance&&a===angle?'current':null));}body.append(row);}table.append(body);wrap.append(table);block.append(wrap);
  const note=node('p',null,'notes');note.textContent='“—”表示 Wiki 未提供对应条件的数据；不进行插值或角度推算。';
+ if(s.type==='HESH'&&s.affectedThickness!=null)note.append(document.createTextNode(' 碎甲弹显示可影响钢板厚度，不是弹体动能穿深。Wiki 未提供该作用厚度的角度表；背面剥落仅为机理示意。'));
  if(s.constantAngles)note.append(document.createTextNode(' 本表显示破甲射流穿深：Wiki 距离简表恒定，角度数值来自破甲射流详情。'));
  if(s.constantPenetration!=null)note.append(document.createTextNode(` Wiki 另标注恒定穿深：${s.constantPenetration} mm。未提供角度时不视为各角度相同。`));
  if(s.secondaryPenetration!=null)note.append(document.createTextNode(` 高爆破片穿深另标注为 ${s.secondaryPenetration} mm，与主表穿深类别不同。`));
- if(s.angles['0']&&s.table0.some((n,i)=>n!==s.angles['0'][i]))note.append(document.createTextNode(' 原页面简表与详情表存在差异，此处优先显示详情表。'));
+ if(s.type!=='HESH'&&s.angles['0']&&s.table0.some((n,i)=>n!==s.angles['0'][i]))note.append(document.createTextNode(' 原页面简表与详情表存在差异，此处优先显示详情表。'));
  if(s.belt)note.append(document.createTextNode(' 此条是弹带组合，穿深按 Wiki 的整条弹带数据展示；未将单发弹药的角度值套用到弹带。'));
  block.append(note);root.append(block);
 }
@@ -90,6 +92,7 @@ for(const id of ['country','role','type'])$(id).addEventListener('change',filter
 let searchTimer;$('search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(filter,140);});
 $('reset').addEventListener('click',()=>{$('search').value='';for(const id of ['country','role','type'])$(id).value='';filter();});
 $('previous').addEventListener('click',()=>{page--;renderList();$('vehicle-list').scrollTop=0;});$('next').addEventListener('click',()=>{page++;renderList();$('vehicle-list').scrollTop=0;});$('retry').addEventListener('click',load);load();
+
 
 
 
