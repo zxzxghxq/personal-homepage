@@ -45,3 +45,4 @@ wrangler pages deploy <公开文件夹> --project-name wt-ammo-guide --branch ma
 
 _headers 提供 CSP、HSTS、禁止页面嵌入、禁止 MIME 嗅探、no-referrer，以及禁用摄像头、麦克风、位置等浏览器权限。网站为静态查询工具，无登录表单或外部脚本。证书、HTTPS 和响应头检查通过；这些检查不等同于全面渗透测试或匿名性保证。
 
+命中演示：选中弹药后，输入 1–2000 mm 的均质钢板厚度并点击发射。根据当前 Wiki 距离与角度穿深进行数值对比，动画为二维示意，不是游戏伤害模型。缺失数据时禁用发射。

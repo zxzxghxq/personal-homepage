@@ -71,7 +71,7 @@ function renderDetails(){
  const wrap=node('div',null,'table-wrap');const table=node('table');const thead=node('thead');const tr=node('tr');['弹药 / 火炮','弹种','初速','穿深 (mm)'].forEach((t,i)=>tr.append(node('th',t,i===3?'number':null)));thead.append(tr);table.append(thead);const tbody=node('tbody');
  const max=Math.max(1,...shells.map(({s})=>value(s)||0));
  for(const {s,i} of shells){const row=node('tr',null,'ammo-row'+(i===shellIndex?' active':''));const namecell=node('td');const b=node('button',s.name,'ammo-name'+(i===shellIndex?' selected':''));b.setAttribute('aria-expanded',String(i===shellIndex));b.addEventListener('click',()=>{shellIndex=i;renderDetails();});namecell.append(b,node('span',s.weapon+(s.belt?' · 弹带':''),'weapon'));row.append(namecell);const typ=node('td');typ.append(node('span',s.type,'ammo-type'));row.append(typ,node('td',s.properties['Muzzle Velocity']||'—'));const pen=value(s);const cell=node('td',pen==null?'—':String(pen),'number');if(pen!=null){const bar=node('div',null,'bar');const fill=node('i');fill.style.width=`${pen/max*100}%`;bar.append(fill);cell.append(bar);}row.append(cell);tbody.append(row);}
- table.append(tbody);wrap.append(table);root.append(wrap);renderShell(root,v.shells[shellIndex]);
+ table.append(tbody);wrap.append(table);root.append(wrap);renderHitDemo(root,v.shells[shellIndex],value(v.shells[shellIndex]),distance,angle);renderShell(root,v.shells[shellIndex]);
 }
 function renderShell(root,s){
  const block=node('div',null,'ammo-detail');block.append(node('h3',s.name),node('p',`${s.type} · ${s.weapon}`,'detail-meta'));
@@ -90,6 +90,7 @@ for(const id of ['country','role','type'])$(id).addEventListener('change',filter
 let searchTimer;$('search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(filter,140);});
 $('reset').addEventListener('click',()=>{$('search').value='';for(const id of ['country','role','type'])$(id).value='';filter();});
 $('previous').addEventListener('click',()=>{page--;renderList();$('vehicle-list').scrollTop=0;});$('next').addEventListener('click',()=>{page++;renderList();$('vehicle-list').scrollTop=0;});$('retry').addEventListener('click',load);load();
+
 
 
 
