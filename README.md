@@ -2,7 +2,7 @@
 
 基于 War Thunder Wiki 的中文陆战弹药与穿深查询网站，采用 HTML / CSS / JavaScript。
 
-- 正式网址：https://personal-homepage-zxzxghxq.pages.dev/
+- 正式网址：https://wt-ammo-guide.pages.dev/
 - 代码仓库：https://github.com/zxzxghxq/personal-homepage
 - 数据来源：https://wiki.warthunder.com/ground
 
@@ -30,10 +30,18 @@
 
 ## 更新部署
 
-代码保存于 GitHub，Cloudflare Pages 当前为 Direct Upload，GitHub 推送不会自动部署。将 `index.html`、`style.css`、`app.js` 和 `data/` 放入单独的公开文件夹，发布：
+代码保存于 GitHub，Cloudflare Pages 当前为 Direct Upload，GitHub 推送不会自动部署。将 `index.html`、`style.css`、`app.js` 、`_headers` 和 `data/` 放入单独的公开文件夹，发布：
 
 ```sh
-wrangler pages deploy <公开文件夹> --project-name personal-homepage-zxzxghxq --branch main
+wrangler pages deploy <公开文件夹> --project-name wt-ammo-guide --branch main
 ```
 
 仅上传公开网站资源，不上传 `.git`、授权文件或本地采集缓存。
+
+
+## 界面与安全
+
+公开地址不含账号名称。采用浅灰背景、白色内容区、深蓝灰正文与深青色强调，已核对主要文字配色对比度。页面不显示原始数据下载按钮。
+
+_headers 提供 CSP、HSTS、禁止页面嵌入、禁止 MIME 嗅探、no-referrer，以及禁用摄像头、麦克风、位置等浏览器权限。网站为静态查询工具，无登录表单或外部脚本。证书、HTTPS 和响应头检查通过；这些检查不等同于全面渗透测试或匿名性保证。
+
