@@ -30,7 +30,7 @@ async function load(){
   const total=vehicles.reduce((n,v)=>n+v.shells.length,0);
   $('counts').replaceChildren(node('b',vehicles.length.toLocaleString()),document.createTextNode(' 辆载具　/　'),node('b',total.toLocaleString()),document.createTextNode(' 条弹药记录'));
   const empty=vehicles.filter(v=>!v.shells.length).length;
-  $('coverage').textContent=`快照：${dataset.collectedAt} · 目录 ${dataset.directoryCount} 辆，成功采集 ${dataset.successCount} 辆。${empty} 辆无可提取的火炮/导弹弹药记录。数据随游戏更新可能变化。`;
+  $('coverage').textContent=`数据日期：${dataset.collectedAt} · ${dataset.successCount} 辆载具 · ${empty} 辆暂无炮弹表。游戏更新后数据可能有变化。`;
   const params=new URLSearchParams(location.search);selectedId=vehicles.some(v=>v.id===params.get('v'))?params.get('v'):(vehicles.some(v=>v.id==='us_t29')?'us_t29':vehicles[0]?.id);
   if(params.has('q'))$('search').value=params.get('q');filter();
  }catch(error){$('load-error').hidden=false;$('details').replaceChildren(node('div','数据暂时无法加载，请点击重试。','empty'));$('result-count').textContent='加载失败';}
@@ -57,16 +57,16 @@ function renderList(){
 function renderDetails(){
  const v=vehicles.find(v=>v.id===selectedId);const root=$('details');root.replaceChildren();
  if(!v){root.append(node('div','没有匹配结果。请调整筛选条件。','empty'));return;}
- const head=node('div',null,'detail-heading');const title=node('div');title.append(node('p','VEHICLE / AMMUNITION','eyebrow'),node('h2',v.name));const link=node('a','查看 Wiki 原始数据','source');link.href=v.source;link.target='_blank';link.rel='noopener';head.append(title,link);root.append(head);
+ const head=node('div',null,'detail-heading');const title=node('div');title.append(node('h2',v.name));const link=node('a','Wiki 页面','source');link.href=v.source;link.target='_blank';link.rel='noopener';head.append(title,link);root.append(head);
  const meta=node('div',null,'vehicle-meta');[country(v),role(v),`等级 ${v.rank||'—'}`,`RB ${v.br?.RB||'—'}`,`${v.shells.length} 种弹药 / 弹带`].forEach(t=>meta.append(node('span',t,'badge')));root.append(meta);
  const conditions=node('div',null,'conditions');
  for(const [id,label,values,current] of [['distance','射击距离',[10,100,500,1000,1500,2000],distance],['angle','入射角度',['0','30','60'],angle]]){
   const l=node('label',label);const select=node('select');select.id=id;values.forEach(val=>{const option=node('option',`${val}${id==='distance'?' m':'°'}`);option.value=val;option.selected=String(val)===String(current);select.append(option);});
   select.addEventListener('change',()=>{if(id==='distance')distance=Number(select.value);else angle=select.value;renderDetails();$(id).focus();});l.append(select);conditions.append(l);
  }
- conditions.append(node('p','穿深单位：mm · 点击弹药查看完整表格','condition-note'));root.append(conditions);
+ conditions.append(node('p','单位：毫米 · 点击弹药名展开详情','condition-note'));root.append(conditions);
  const shells=v.shells.map((s,i)=>({s,i})).filter(({s})=>!$('type').value||s.type.split('/').includes($('type').value));
- if(!shells.length){const empty=node('div',null,'empty');empty.append(node('b',v.error?'此载具资料采集失败':'无可提取的弹药表'),node('span','可通过上方 Wiki 链接查看原始资料。机枪与榴弹发射器不在本库范围内。'));root.append(empty);return;}
+ if(!shells.length){const empty=node('div',null,'empty');empty.append(node('b',v.error?'此载具数据暂缺':'暂无炮弹数据'),node('span','请查看上方 Wiki 页面。机枪与榴弹发射器不在本库范围内。'));root.append(empty);return;}
  if(!shells.some(x=>x.i===shellIndex))shellIndex=shells[0].i;
  const wrap=node('div',null,'table-wrap');const table=node('table');const thead=node('thead');const tr=node('tr');['弹药 / 火炮','弹种','初速','穿深 (mm)'].forEach((t,i)=>tr.append(node('th',t,i===3?'number':null)));thead.append(tr);table.append(thead);const tbody=node('tbody');
  const max=Math.max(1,...shells.map(({s})=>value(s)||0));
@@ -90,6 +90,7 @@ for(const id of ['country','role','type'])$(id).addEventListener('change',filter
 let searchTimer;$('search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(filter,140);});
 $('reset').addEventListener('click',()=>{$('search').value='';for(const id of ['country','role','type'])$(id).value='';filter();});
 $('previous').addEventListener('click',()=>{page--;renderList();$('vehicle-list').scrollTop=0;});$('next').addEventListener('click',()=>{page++;renderList();$('vehicle-list').scrollTop=0;});$('retry').addEventListener('click',load);load();
+
 
 
 
