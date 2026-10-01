@@ -10,7 +10,9 @@ function ammunitionEffect(shell){
  if(t.includes('SHRAPNEL'))return {kind:'shrapnel',label:'榴霰弹'};
  if(t.includes('SMOKE'))return {kind:'smoke',label:'烟雾弹'};
  if(t.startsWith('HE')||t.startsWith('FI')||t.includes('AHEAD'))return {kind:'he',label:'高爆/破片弹'};
- return {kind:t.includes('APHE')?'aphe':'ap',label:t.includes('APHE')?'穿甲榴弹':'穿甲弹'};
+ const filling=Object.entries(shell.properties||{}).some(([key,val])=>['Explosive Mass','TNT Equivalent'].includes(key)&&parseFloat(String(val).replace(/,/g,''))>0);
+ const bursting=t.includes('APHE')||t.includes('SAPCBC')||t.includes('APCBC')&&filling;
+ return {kind:bursting?'aphe':'ap',label:bursting?(t.includes('SAPCBC')?'半穿甲榴弹':'穿甲榴弹'):'穿甲弹'};
 }
 function renderHitDemo(root,shell,penetration,shotDistance,shotAngle,selection){
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!=null)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -57,7 +59,7 @@ function renderHitDemo(root,shell,penetration,shotDistance,shotAngle,selection){
  const particles=Array.from({length:15},(_,i)=>sv('circle',{cx:0,cy:0,r:i%3===0?3:2,fill:fx.kind==='hesh'?'#526d84':'#b78339',opacity:0},scene));
  const smoke=Array.from({length:7},()=>sv('circle',{cx:0,cy:0,r:0,fill:'#a7b2bc',opacity:0},scene));
  panel.append(scene);const result=el('p','选择弹药，设置钢板厚度后发射。','demo-result');result.setAttribute('role','status');panel.append(result);
- const descriptions={heat:'锥形装药弹体停在装甲外，随后显示金属射流。',dart:'细长穿甲杆带尾翼；先显示弹托分离，再由杆体撞击装甲。',hesh:'装药在钢板表面摊开并爆炸；背面剥落不等于弹体穿孔。',shrapnel:'弹体在钢板前打开，弹丸向前散射。图中起爆点是演示位置，不是引信设置值。',sam:'导弹接近航空目标后显示爆炸和破片，不以坦克穿深数值判定飞机损伤。',missile:'导弹沿制导参考线飞行，命中后显示破甲射流。瞄准线不代表所有导弹都由导线制导。','missile-he':'导弹命中后显示爆炸与破片。',he:'弹体在命中点爆炸，破片向周围扩散。',aphe:'穿透后显示装药在钢板后爆炸；被挡住时不显示板后爆炸。',core:'次口径弹芯撞击钢板，效果为弹芯示意。',ap:'全口径弹体撞击钢板，穿深足够时继续向板后运动。',smoke:'展示烟雾形成，不判定穿甲。'};
+ const descriptions={heat:'锥形装药弹体停在装甲外，随后显示金属射流。',dart:'细长穿甲杆带尾翼；先显示弹托分离，再由杆体撞击装甲。',hesh:'装药在钢板表面摊开并爆炸；背面剥落不等于弹体穿孔。',shrapnel:'弹体在钢板前打开，弹丸向前散射。图中起爆点是演示位置，不是引信设置值。',sam:'导弹接近航空目标后显示爆炸和破片，不以坦克穿深数值判定飞机损伤。',missile:'导弹沿制导参考线飞行，命中后显示破甲射流。瞄准线不代表所有导弹都由导线制导。','missile-he':'导弹命中后显示爆炸与破片。',he:'弹体在命中点爆炸，破片向周围扩散。',aphe:'弹体先穿过钢板，再在板后爆炸并向四周散射破片；未击穿时不显示板后爆炸。APCBC 的板后爆炸仅用于 Wiki 标有炸药装填的弹药。',core:'次口径弹芯撞击钢板，效果为弹芯示意。',ap:'全口径弹体撞击钢板，穿深足够时继续向板后运动。',smoke:'展示烟雾形成，不判定穿甲。'};
  panel.append(el('p',descriptions[fx.kind]+(wire?' 本条 TOW 以细线表示指令传输导线。':'')+(shell.name.includes('TOW-2B')?' 此图仅示意导弹与射流，不复现越顶攻击轨迹。':'')+(shell.belt?' 弹带外形按其中的代表弹种示意，不逐发模拟组合。':'')+' 外形和作用过程为二维示意，不按比例，也不计算真实弹道、跳弹、ERA、复合装甲或车内伤害。','notes'));
  let running=false,revision=0;
  function resetVisual(){bullet.setAttribute('transform','translate(65 155)');bullet.setAttribute('opacity',1);trail.setAttribute('d','');[flash,jet,splash,sabot,...particles,...smoke].forEach(n=>n.setAttribute('opacity',0));}
@@ -80,11 +82,13 @@ function renderHitDemo(root,shell,penetration,shotDistance,shotAngle,selection){
     const explosive=['heat','missile','missile-he','hesh','he','shrapnel','sam','aphe'].includes(fx.kind);
     if(!['dart','core','ap','aphe'].includes(fx.kind)||!passes)bullet.setAttribute('opacity',0);
     const originX=fx.kind==='aphe'&&passes?hitX+115:hitX;
-    if(explosive&&(fx.kind!=='aphe'||passes)){flash.setAttribute('cx',originX);flash.setAttribute('cy',hitY);flash.setAttribute('r',8+effect*42);flash.setAttribute('opacity',Math.max(0,.8-effect));}
+    const burst=fx.kind==='aphe'?Math.max(0,(effect-.55)/.45):effect;
+    if(fx.kind==='aphe'&&passes&&effect>=.55)bullet.setAttribute('opacity',0);
+    if(explosive&&(fx.kind!=='aphe'||passes&&burst>0)){flash.setAttribute('cx',originX);flash.setAttribute('cy',hitY);flash.setAttribute('r',8+burst*42);flash.setAttribute('opacity',Math.max(0,.9-burst*.8));}
     if(['heat','missile'].includes(fx.kind)){const length=(passes?235:Math.max(10,Number(armor.getAttribute('width'))*.4))*Math.min(1,effect*1.6);jet.setAttribute('d',`M${hitX} ${hitY}L${hitX+length} ${hitY}`);jet.setAttribute('opacity',Math.max(.2,1-effect*.7));}
     if(fx.kind==='hesh'){splash.setAttribute('cx',hitX);splash.setAttribute('ry',Math.min(30,8+effect*35));splash.setAttribute('opacity',1);}
-    const showParticles=['he','missile-he','sam','shrapnel'].includes(fx.kind)||fx.kind==='hesh'&&(passes||!judged)||passes&&['heat','missile','dart','core','ap','aphe'].includes(fx.kind);
-    if(showParticles)particles.forEach((particle,i)=>{const radial=['he','missile-he','sam'].includes(fx.kind),spread=radial?Math.PI*2*i/15:(i-7)*.12;const origin=fx.kind==='hesh'?530:originX;const travel=effect*(70+(i%5)*25);particle.setAttribute('cx',origin+Math.cos(spread)*travel);particle.setAttribute('cy',hitY+Math.sin(spread)*travel);particle.setAttribute('opacity',Math.max(.2,1-effect*.65));});
+    const showParticles=['he','missile-he','sam','shrapnel'].includes(fx.kind)||fx.kind==='hesh'&&(passes||!judged)||passes&&(['heat','missile','dart','core','ap'].includes(fx.kind)||fx.kind==='aphe'&&burst>0);
+    if(showParticles)particles.forEach((particle,i)=>{const radial=['he','missile-he','sam','aphe'].includes(fx.kind),spread=radial?Math.PI*2*i/15:(i-7)*.12;const origin=fx.kind==='hesh'?530:originX;const travel=burst*(70+(i%5)*25);particle.setAttribute('cx',origin+Math.cos(spread)*travel);particle.setAttribute('cy',hitY+Math.sin(spread)*travel);particle.setAttribute('opacity',Math.max(.2,1-effect*.65));});
     if(fx.kind==='smoke')smoke.forEach((n,i)=>{n.setAttribute('cx',hitX+(i-3)*14);n.setAttribute('cy',hitY-effect*(20+i*12));n.setAttribute('r',12+effect*(20+i*3));n.setAttribute('opacity',.25);});
    }
    if(p<1)requestAnimationFrame(frame);else finish();
