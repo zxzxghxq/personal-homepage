@@ -1,6 +1,9 @@
 let demoArmorThickness=100,demoTarget='armor',demoVtMode='impact';
 function ammunitionEffect(shell){
  const t=shell.type.toUpperCase(),g=shell.properties.Guidance||'';
+ const filling=Object.entries(shell.properties||{}).some(([key,val])=>['Explosive Mass','TNT Equivalent'].includes(key)&&parseFloat(String(val).replace(/,/g,''))>0);
+ const semi=t.split('/').find(x=>x.startsWith('SAP'));
+ if(semi){const bursting=/SAPHEI|SAPCBC/.test(semi)||filling;return {kind:bursting?'aphe':'ap',label:bursting?'半穿甲高爆弹':semi.includes('-I')?'半穿甲燃烧弹':'半穿甲弹',incendiary:!bursting&&semi.includes('-I')};}
  if(t.includes('AHEAD'))return {kind:'ahead',label:'AHEAD 可编程空爆弹'};
  if(t.includes('VT'))return {kind:'vt',label:'VT 近炸弹药',guided:t.includes('ATGM'),guidance:g};
  if(t==='SAM'||t==='AAM')return {kind:'sam',label:'防空导弹',guided:true,guidance:g};
@@ -13,7 +16,6 @@ function ammunitionEffect(shell){
  if(t.includes('SHRAPNEL'))return {kind:'shrapnel',label:'榴霰弹'};
  if(t.includes('SMOKE'))return {kind:'smoke',label:'烟雾弹'};
  if(t.startsWith('HE')||t.startsWith('FI')||t.includes('AHEAD'))return {kind:'he',label:'高爆/破片弹'};
- const filling=Object.entries(shell.properties||{}).some(([key,val])=>['Explosive Mass','TNT Equivalent'].includes(key)&&parseFloat(String(val).replace(/,/g,''))>0);
  const bursting=t.includes('APHE')||t.includes('SAPCBC')||t.includes('APCBC')&&filling;
  return {kind:bursting?'aphe':'ap',label:bursting?(t.includes('SAPCBC')?'半穿甲榴弹':'穿甲榴弹'):'穿甲弹'};
 }
@@ -71,7 +73,7 @@ function renderHitDemo(root,shell,penetration,shotDistance,shotAngle,selection){
  const smoke=Array.from({length:7},()=>sv('circle',{cx:0,cy:0,r:0,fill:'#a7b2bc',opacity:0},scene));
  panel.append(scene);const result=el('p','选择弹药，设置钢板厚度后发射。','demo-result');result.setAttribute('role','status');panel.append(result);
  const descriptions={topattack:'导弹从车顶上方掠过，在目标上方触发向下作用。TOW-2B 用短粗侵彻体表示爆炸成形侵彻体，BILL 用细长射流表示聚能作用。只比较所选条件下的 Wiki 穿深与顶部均质钢板，不计算复合装甲、传感器阈值或真实车内损伤。',ahead:'可编程起爆后，预制子弹丸沿前向锥形区域散射。面对钢板显示表面撞击，面对飞机显示子弹丸扫过机体；不把整弹穿深当作子弹丸穿深。',vt:'VT 使用近炸引信，航空场景显示目标附近起爆和破片扩散；装甲场景可切换接触起爆与板前近炸。感应圈只是提示，不代表该弹真实触发距离；接触模式不代表所有载具都可切换引信。',heat:'锥形装药弹体停在装甲外，随后显示金属射流。',dart:'细长穿甲杆带尾翼；先显示弹托分离，再由杆体撞击装甲。',hesh:'装药在钢板表面摊开并爆炸；背面剥落不等于弹体穿孔。',shrapnel:'弹体在钢板前打开，弹丸向前散射。图中起爆点是演示位置，不是引信设置值。',sam:'导弹接近航空目标后显示爆炸和破片，不以坦克穿深数值判定飞机损伤。',missile:'导弹沿制导参考线飞行，命中后显示破甲射流。瞄准线不代表所有导弹都由导线制导。','missile-he':'导弹命中后显示爆炸与破片。',he:'弹体在命中点爆炸，破片向周围扩散。',aphe:'弹体先穿过钢板，再在板后爆炸并向四周散射破片；未击穿时不显示板后爆炸。APCBC 的板后爆炸仅用于 Wiki 标有炸药装填的弹药。',core:'次口径弹芯撞击钢板，效果为弹芯示意。',ap:'全口径弹体撞击钢板，穿深足够时继续向板后运动。',smoke:'展示烟雾形成，不判定穿甲。'};
- panel.append(el('p',descriptions[fx.kind]+(wire?' 本条 TOW 以细线表示指令传输导线。':'')+(shell.belt?' 弹带外形按其中的代表弹种示意，不逐发模拟组合。':'')+' 外形和作用过程为二维示意，不按比例，也不计算真实弹道、跳弹、ERA、复合装甲或车内伤害。','notes'));
+ panel.append(el('p',(fx.incendiary?'半穿甲燃烧弹穿透后显示局部燃烧；没有高爆装填时不显示板后爆炸。':descriptions[fx.kind])+(wire?' 本条 TOW 以细线表示指令传输导线。':'')+(shell.belt?' 弹带外形按其中的代表弹种示意，不逐发模拟组合。':'')+' 外形和作用过程为二维示意，不按比例，也不计算真实弹道、跳弹、ERA、复合装甲或车内伤害。','notes'));
  if(dual||top){const source=el('a','作用机理来源','source');source.href=fx.kind==='ahead'?'https://www.rheinmetall.com/en/products/weapons-and-ammunition/medium-calibre-ammunition':'https://wiki.warthunder.com/weapon/2544-tank-ammunition';source.target='_blank';source.rel='noopener';panel.append(source);}
  let running=false,revision=0;
  function resetVisual(){bullet.setAttribute('transform',top?'translate(65 75)':'translate(65 155)');bullet.setAttribute('opacity',1);trail.setAttribute('d','');[flash,jet,splash,sabot,cone,...impactMarks,...particles,...smoke].forEach(n=>n.setAttribute('opacity',0));}
@@ -102,6 +104,7 @@ function renderHitDemo(root,shell,penetration,shotDistance,shotAngle,selection){
     if(fx.kind==='hesh'){splash.setAttribute('cx',hitX);splash.setAttribute('ry',Math.min(30,8+effect*35));splash.setAttribute('opacity',1);}
     const showParticles=['he','missile-he','sam','shrapnel','ahead','vt'].includes(fx.kind)||fx.kind==='hesh'&&(passes||!judged)||passes&&(['heat','missile','dart','core','ap'].includes(fx.kind)||fx.kind==='aphe'&&burst>0);
     if(showParticles)particles.forEach((particle,i)=>{const radial=['he','missile-he','sam','aphe','vt'].includes(fx.kind),spread=radial?Math.PI*2*i/15:(i-7)*.12;const origin=fx.kind==='hesh'?530:originX;const travel=burst*(70+(i%5)*25);const px=origin+Math.cos(spread)*travel;particle.setAttribute('cx',dual&&!air?Math.min(490,px):px);particle.setAttribute('cy',hitY+Math.sin(spread)*travel);particle.setAttribute('opacity',Math.max(.2,1-effect*.65));});
+    if(fx.incendiary&&passes&&effect>.55){flash.setAttribute('cx',hitX+125);flash.setAttribute('cy',hitY);flash.setAttribute('r',10+Math.sin(effect*30)*3);flash.setAttribute('opacity',.65);smoke.slice(0,3).forEach((n,i)=>{n.setAttribute('cx',hitX+125+i*5);n.setAttribute('cy',hitY-(effect-.55)*(40+i*25));n.setAttribute('r',6+i*3);n.setAttribute('opacity',.25);});}
     if(fx.kind==='smoke')smoke.forEach((n,i)=>{n.setAttribute('cx',hitX+(i-3)*14);n.setAttribute('cy',hitY-effect*(20+i*12));n.setAttribute('r',12+effect*(20+i*3));n.setAttribute('opacity',.25);});
    }
    if(dual&&effect>0){if(fx.kind==='ahead'){cone.setAttribute('d',`M${hitX} ${hitY}L${Math.min(air?800:490,hitX+effect*220)} ${hitY-effect*90}L${Math.min(air?800:490,hitX+effect*220)} ${hitY+effect*90}Z`);cone.setAttribute('opacity',.12);}if(effect>.55)impactMarks.forEach((mark,i)=>{const mx=air?605+(i%3)*22:490,my=hitY+(i-4)*8;mark.setAttribute('d',`M${mx-4} ${my-4}L${mx+4} ${my+4}M${mx-4} ${my+4}L${mx+4} ${my-4}`);mark.setAttribute('opacity',.7);});}
